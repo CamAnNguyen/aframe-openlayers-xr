@@ -3,7 +3,8 @@
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import { Icon, Style } from 'ol/style';
-import { fromLonLat } from 'ol/proj';
+import { transformExtent, fromLonLat } from 'ol/proj';
+import { containsExtent } from 'ol/extent';
 
 function parseSpacedFloats (value, count, attributeName) {
   if (!value) {
@@ -64,33 +65,58 @@ AFRAME.registerComponent('ol-marker', {
   },
 
   init: function () {
+    // Create a marker as a-image
     const image = document.createElement('a-image');
     AFRAME.utils.entity.setComponentProperty(image, 'src', this.data.src);
     AFRAME.utils.entity.setComponentProperty(image, 'width', this.data.width);
     AFRAME.utils.entity.setComponentProperty(image, 'height', this.data.height);
 
     image.object3D.visible = false;
+    // y-axis is inverted
     image.object3D.scale.multiply(new THREE.Vector3(1, -1, 1));
 
+    // Append to current entity
     this.imageEl = image;
     this.el.appendChild(image);
 
-    this.el.addEventListener('changestyle', this.onChangeStyle.bind(this));
+    // this.el.addEventListener('changestyle', this.onChangeStyle.bind(this));
+    // Callback after ol-xr is initialized
     this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
   },
 
-  update: function (oldData) {
-    if (!this.image) return;
-  },
-
   tick: function (time, timeDelta) {
+    if (!this.feature || !this.mapInstance) return;
+
+    const extentFeature = this.feature.getGeometry().getExtent();
+
+    // TODO: Marker move out from map
+    if (containsExtent(this.mapExtent, extentFeature)) {
+      const coordinate = this.feature.getGeometry().getCoordinates();
+      const pixel = this.mapInstance.getPixelFromCoordinate(coordinate);
+
+      const posX = (pixel[0] / this.xPxToWorldRatio) - (this.elWidth / 2);
+      const posY = (pixel[1] / this.yPxToWorldRatio) - (this.elHeight / 2);
+
+      this.imageEl.object3D.position.set(posX, posY, 0);
+      this.imageEl.object3D.visible = true;
+    } else {
+      this.imageEl.object3D.visible = false;
+    }
   },
 
   onMapLoaded: function () {
-    this.mapInstance = this.el.components['ol-xr'].mapInstance;
+    const olXr = this.el.components['ol-xr'];
+    this.xPxToWorldRatio = olXr.xPxToWorldRatio;
+    this.yPxToWorldRatio = olXr.yPxToWorldRatio;
 
-    const iconLayer = this.mapInstance.getLayers().item(1);
-    if (!iconLayer) return;
+    this.elWidth = this.el.components.geometry.data.width;
+    this.elHeight = this.el.components.geometry.data.height;
+
+    this.mapInstance = olXr.mapInstance;
+    this.mapExtent = this.mapInstance.getView().calculateExtent(this.mapInstance.getSize());
+
+    const markerLayer = this.mapInstance.getLayers().item(1);
+    if (!markerLayer) return;
 
     const { latlong } = this.data;
     const longlat = [latlong[1], latlong[0]];
@@ -102,13 +128,15 @@ AFRAME.registerComponent('ol-marker', {
       image: new Icon({ src: this.data.src })
     }));
 
-    const iconSource = iconLayer.getSource();
+    const iconSource = markerLayer.getSource();
     iconSource.addFeature(this.feature);
   },
 
-  onChangeStyle: function (style) {
-  },
-
   remove: function () {
+    this.el.removeChild(this.imageEl);
+
+    if (!this.mapInstance || !this.feature) return;
+
+    this.mapInstance.getLayers().item(1).removeFeature(this.feature);
   }
 });

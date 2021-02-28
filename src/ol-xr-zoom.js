@@ -1,5 +1,3 @@
-/* eslint-env commonjs, browser, es6 */
-
 AFRAME.registerComponent('ol-zoom', {
   dependencies: ['ol-xr'],
 

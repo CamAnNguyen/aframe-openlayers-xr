@@ -40,6 +40,8 @@ AFRAME.registerComponent('ol-dragpan', {
     const newCenter = this.mapInstance.getCoordinateFromPixel(newCenterInPx);
     this.mapInstance.getView().setCenter(newCenter);
     this.mapInstance.renderFrame_(Date.now());
+
+    this.el.emit('ol-xr-dragpan');
   },
 
   onMapLoaded: function () {
@@ -52,6 +54,7 @@ AFRAME.registerComponent('ol-dragpan', {
 
   onExitVr: function () {
     this.isVr = false;
+    this.endDragPan();
   },
 
   onTriggerDown: function () {
@@ -60,9 +63,7 @@ AFRAME.registerComponent('ol-dragpan', {
 
   onTriggerUp: function () {
     this.triggerDown = false;
-    this.curIntersection = null;
-    this.oldIntersection = null;
-    this.deltaPan = null;
+    this.endDragPan();
   },
 
   onIntersected: function (data) {
@@ -73,5 +74,14 @@ AFRAME.registerComponent('ol-dragpan', {
   onIntersectedCleared: function () {
     this.isIntersected = false;
     this.raycaster = null;
+    this.endDragPan();
+  },
+
+  endDragPan: function () {
+    this.curIntersection = null;
+    this.oldIntersection = null;
+    this.deltaPan = null;
+
+    this.el.emit('ol-xr-dragpan-end');
   }
 });

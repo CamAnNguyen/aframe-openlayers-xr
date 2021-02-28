@@ -10,7 +10,7 @@ import View from 'ol/View';
 import { Vector as VectorSource } from 'ol/source';
 import { Layer, Vector as VectorLayer } from 'ol/layer';
 import { createXYZ } from 'ol/tilegrid';
-import { fromLonLat } from 'ol/proj';
+import { transform, fromLonLat } from 'ol/proj';
 
 const currentScript = document.currentScript || (function () {
   const scripts = document.getElementsByTagName('script');
@@ -160,8 +160,10 @@ AFRAME.registerComponent('ol-xr', {
     canvas: { type: 'selector' }
   },
   init: function () {
-    this.el.object3D.scale.multiply(new THREE.Vector3(1, -1, 1));
     const el = this.el;
+
+    el.object3D.scale.multiply(new THREE.Vector3(1, -1, 1));
+    el.object3D.visible = false;
 
     const data = this.data;
     const geomData = el.components.geometry.data;
@@ -171,6 +173,10 @@ AFRAME.registerComponent('ol-xr', {
 
     this.xPxToWorldRatio = width / geomData.width;
     this.yPxToWorldRatio = height / geomData.height;
+
+    this.tmpObj3D = new THREE.Object3D();
+    this.tmpMatrix4 = new THREE.Matrix4();
+    this.tmpEuler = new THREE.Euler();
 
     const options = Object.assign(
       {},
@@ -221,12 +227,13 @@ AFRAME.registerComponent('ol-xr', {
     this.mapInstance.once('rendercomplete', function () {
       el.emit('ol-maprendercomplete', { map: this.mapInstance });
     });
+
+    this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
+    this.el.addEventListener('oculus-triggerup', this.onTriggerUp.bind(this));
+    this.el.addEventListener('ol-map-intersected', this.onIntersected.bind(this));
+    this.el.addEventListener('ol-map-intersected-cleared', this.onIntersectedCleared.bind(this));
   },
 
-  /**
-   * Called when component is attached and when component data changes.
-   * Generally modifies the entity based on the data.
-   */
   update: function (oldData) {
     if (!this.mapInstance) return;
 
@@ -270,6 +277,12 @@ AFRAME.registerComponent('ol-xr', {
       material.skinning = true;
       material.morphTargets = true;
       material.map.needsUpdate = true;
+    }
+  },
+
+  tick: function (time, timeDelta) {
+    if (this.isIntersected && this.raycaster) {
+      this.intersection = this.raycaster.getIntersection(this.el);
     }
   },
 
@@ -368,16 +381,53 @@ AFRAME.registerComponent('ol-xr', {
 
     // Return the long / lat of that pixel on the map
     return this.mapInstance.unproject([pxX, pxY]).toArray();
+  },
+
+  onTriggerDown: function (data) {
+    this.triggerDown = true;
+    const { visible } = this.el.object3D;
+
+    if (!this.isIntersected && visible) {
+      this.el.object3D.visible = false;
+      return;
+    }
+
+    const displayMap = (this.triggerDown && !visible);
+    if (!displayMap) return;
+
+    this.el.object3D.visible = true;
+
+    const { skyEl, intersection } = data.detail;
+    const skyRotation = skyEl.getAttribute('rotation');
+    const { point } = intersection;
+
+    const worldToLocal = this.tmpMatrix4;
+    worldToLocal.copy(skyEl.object3D.matrixWorld).invert();
+    this.tmpObj3D.position.copy(point);
+    this.tmpObj3D.applyMatrix4(worldToLocal);
+
+    const eulerX = (-skyRotation.x * Math.PI) / 180;
+    const eulerY = (-skyRotation.y * Math.PI) / 180;
+    const eulerZ = (-skyRotation.z * Math.PI) / 180;
+    this.tmpEuler.set(2 * eulerX, 2 * eulerY, 2 * eulerZ);
+    this.tmpObj3D.position.applyEuler(this.tmpEuler);
+
+    const { position } = this.tmpObj3D;
+    const [lat, long] = unproject(position.x, position.y, position.z);
+
+    this.mapInstance.getView().setCenter(transform([long, lat], 'EPSG:4326', 'EPSG:3857'));
+    this.mapInstance.renderFrame_(Date.now());
+  },
+
+  onTriggerUp: function () {
+    this.triggerDown = false;
+  },
+
+  onIntersected: function (data) {
+    this.isIntersected = true;
+  },
+
+  onIntersectedCleared: function () {
+    this.isIntersected = false;
   }
 });
-
-// map.once('postrender', function() {
-//   // var geometry = polyFeature.getGeometry();
-//   // var coordinate = geometry.getCoordinates();
-//   // var pixel1 = map.getPixelFromCoordinate(coordinate);
-
-//   const coord = fromLonLat([133.281323, -26.4390917]);
-//   const pixel = map.getPixelFromCoordinate(coord);
-//   console.log(coord);
-//   console.log(pixel);
-// });
