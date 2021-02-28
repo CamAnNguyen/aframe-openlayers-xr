@@ -7,9 +7,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   entry: {
-    // 'ol-xr-icon': './src/ol-xr-icon.js',
     'ol-xr-component': './src/ol-xr-component.js',
-    'ol-xr-worker': './src/ol-xr-worker.js'
+    'ol-xr-worker': './src/ol-xr-worker.js',
+    'ol-xr-zoom': './src/ol-xr-zoom.js',
+    // 'ol-xr-icon': './src/ol-xr-icon.js'
   },
   plugins: [
     new CleanWebpackPlugin(),

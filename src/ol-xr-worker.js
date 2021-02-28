@@ -9,7 +9,6 @@ import { Projection } from 'ol/proj';
 
 import styleFunction from 'ol-mapbox-style/dist/stylefunction';
 
-console.log('worker');
 // eslint-disable-next-line no-undef
 const worker = self;
 
@@ -141,7 +140,6 @@ const maxTotalLoading = 8;
 const maxNewLoads = 2;
 
 worker.addEventListener('message', (event) => {
-  console.log(event.data.action);
   if (event.data.action !== 'render') return;
 
   frameState = event.data.frameState;

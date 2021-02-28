@@ -23,11 +23,6 @@ const defaultWorkerUrl = (
   'https://rawgit.com/CamAnNguyen/aframe-openlayers-xr/master/build/ol-xr-worker.js'
 );
 
-const MAP_RENDER_COMPLETE_EVENT = 'olrendercomplete';
-const MAP_RENDER_CB_EVENT = 'olrender';
-const MAP_POST_RENDER_EVENT = 'olpostrender';
-const MAP_WORKER_ON_MESSAGE_EVENT = 'olworkermessage';
-
 function parseSpacedFloats (value, count, attributeName) {
   if (!value) {
     return undefined;
@@ -207,7 +202,7 @@ AFRAME.registerComponent('ol-xr', {
       view: new View({
         resolutions: createXYZ({ tileSize: 512 }).getResolutions89,
         center: fromLonLat([133.281323, -26.4390917]),
-        zoom: 3
+        zoom: 2
       }),
       layers: [
         new Layer({
@@ -220,12 +215,14 @@ AFRAME.registerComponent('ol-xr', {
       ]
     }, options));
 
+    el.emit('ol-maploaded', { map: this.mapInstance });
+
     this.mapInstance.once('postrender', function () {
-      el.emit(MAP_POST_RENDER_EVENT);
+      el.emit('ol-mappostrender', { map: this.mapInstance });
     });
 
     this.mapInstance.once('rendercomplete', function () {
-      el.emit(MAP_RENDER_COMPLETE_EVENT);
+      el.emit('ol-maprendercomplete', { map: this.mapInstance });
     });
   },
 
@@ -313,7 +310,7 @@ AFRAME.registerComponent('ol-xr', {
       }
     }
 
-    this.el.emit(MAP_WORKER_ON_MESSAGE_EVENT, message.data);
+    this.el.emit('ol-worker-onmessage', message.data);
   },
 
   updateTexture: function (imageData) {
@@ -330,7 +327,7 @@ AFRAME.registerComponent('ol-xr', {
       frameState: JSON.parse(safeStringify(frameState))
     });
 
-    this.el.emit(MAP_RENDER_CB_EVENT, frameState);
+    this.el.emit('ol-render-callback', { frameState });
   },
 
   /**
