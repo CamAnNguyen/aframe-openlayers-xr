@@ -77,10 +77,7 @@ function getOlContainerEl (id, width, height) {
 
   element.setAttribute('id', id);
 
-  // element.style.position = 'fixed';
-  // element.style.left = '99999px';
-  // element.style.top = '0';
-
+  element.style.position = 'fixed';
   element.style.margin = 'auto';
   element.style.width = `${width}px`;
   element.style.height = `${height}px`;
@@ -371,13 +368,7 @@ AFRAME.registerComponent('ol-xr', {
 
     // Return the long / lat of that pixel on the map
     return this.mapInstance.unproject([pxX, pxY]).toArray();
-  },
-
-  getMap: function () {
-    return this.mapInstance;
-  },
-
-  getLayers: () => this.getMap().getLayers()
+  }
 });
 
 // map.once('postrender', function() {

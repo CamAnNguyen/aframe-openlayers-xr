@@ -1,16 +1,21 @@
 /* eslint-env commonjs, browser, es6 */
 
 AFRAME.registerComponent('ol-zoom', {
-  dependencies: ['ol-map'],
+  dependencies: ['ol-xr'],
+
   schema: {
-    'zoom-in': { default: '' },
-    'zoom-out': { default: '' }
+    size: { default: 0.15 },
+    zoomIn: { default: '' },
+    zoomOut: { default: '' }
   },
+
   init: function () {
     const el = this.el;
 
     const zoomInBtn = document.createElement('a-image');
     AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'src', this.data.zoomIn);
+    AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'width', this.data.size);
+    AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'height', this.data.size);
     this.zoomInBtn = zoomInBtn;
     this.el.appendChild(zoomInBtn);
     zoomInBtn.addEventListener('loaded', function () {
@@ -19,13 +24,15 @@ AFRAME.registerComponent('ol-zoom', {
 
     const zoomOutBtn = document.createElement('a-image');
     AFRAME.utils.entity.setComponentProperty(zoomOutBtn, 'src', this.data.zoomOut);
+    AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'width', this.data.size);
+    AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'height', this.data.size);
     this.zoomOutBtn = zoomOutBtn;
     this.el.appendChild(zoomOutBtn);
     zoomOutBtn.addEventListener('loaded', function () {
       el.emit('ol-zoom-out-loaded', zoomOutBtn);
     });
 
-    this.el.addEventListener('ol-maploaded', this.onMapLoaded.bind(this));
+    this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
 
     this.el.addEventListener('ol-zoomin', this.onMapZoomIn.bind(this));
     this.el.addEventListener('ol-zoomin-hover', this.onMapZoomInHover.bind(this));
@@ -34,8 +41,8 @@ AFRAME.registerComponent('ol-zoom', {
     this.el.addEventListener('ol-zoomout-hover', this.onMapZoomOutHover.bind(this));
   },
 
-  onMapLoaded: function (data) {
-    this.mapInstance = data.map;
+  onMapLoaded: function () {
+    this.mapInstance = this.el.components['ol-xr'].mapInstance;
     this.currentZoomLevel = this.mapInstance.getView().getZoom();
   },
 

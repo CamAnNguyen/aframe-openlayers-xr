@@ -9,8 +9,9 @@ module.exports = {
   entry: {
     'ol-xr-component': './src/ol-xr-component.js',
     'ol-xr-worker': './src/ol-xr-worker.js',
+    'ol-xr-dragpan': './src/ol-xr-dragpan.js',
     'ol-xr-zoom': './src/ol-xr-zoom.js',
-    // 'ol-xr-icon': './src/ol-xr-icon.js'
+    'ol-xr-marker': './src/ol-xr-marker.js'
   },
   plugins: [
     new CleanWebpackPlugin(),
