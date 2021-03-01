@@ -3,8 +3,8 @@
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import { Icon, Style } from 'ol/style';
-import { transformExtent, fromLonLat } from 'ol/proj';
-import { containsExtent } from 'ol/extent';
+import { fromLonLat } from 'ol/proj';
+import { containsCoordinate } from 'ol/extent';
 
 function parseSpacedFloats (value, count, attributeName) {
   if (!value) {
@@ -87,11 +87,10 @@ AFRAME.registerComponent('ol-marker', {
   tick: function (time, timeDelta) {
     if (!this.feature || !this.mapInstance) return;
 
-    const extentFeature = this.feature.getGeometry().getExtent();
+    const mapExtent = this.mapInstance.getView().calculateExtent(this.mapInstance.getSize());
 
-    // TODO: Marker move out from map
-    if (containsExtent(this.mapExtent, extentFeature)) {
-      const coordinate = this.feature.getGeometry().getCoordinates();
+    const coordinate = this.feature.getGeometry().getCoordinates();
+    if (containsCoordinate(mapExtent, coordinate)) {
       const pixel = this.mapInstance.getPixelFromCoordinate(coordinate);
 
       const posX = (pixel[0] / this.xPxToWorldRatio) - (this.elWidth / 2);
@@ -113,7 +112,6 @@ AFRAME.registerComponent('ol-marker', {
     this.elHeight = this.el.components.geometry.data.height;
 
     this.mapInstance = olXr.mapInstance;
-    this.mapExtent = this.mapInstance.getView().calculateExtent(this.mapInstance.getSize());
 
     const markerLayer = this.mapInstance.getLayers().item(1);
     if (!markerLayer) return;
