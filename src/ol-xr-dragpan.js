@@ -1,5 +1,3 @@
-const panSpeed = 100;
-
 AFRAME.registerComponent('ol-dragpan', {
   dependencies: ['ol-map, raycaster'],
   init: function () {
@@ -16,7 +14,9 @@ AFRAME.registerComponent('ol-dragpan', {
   },
 
   tick: function (time, timeDelta) {
-    if (!this.el.object3D.visible || !this.dragPanRaycaster) return;
+    if (!this.mapInstance || !this.el.object3D.visible || !this.dragPanRaycaster) {
+      return;
+    }
 
     this.oldIntersection = this.curIntersection;
     this.curIntersection = this.el.components.raycaster.getIntersection(this.el);
@@ -35,12 +35,16 @@ AFRAME.registerComponent('ol-dragpan', {
 
     if (!isDragging) return;
 
-    const deltaX = this.isVr ? -this.deltaPan[0] : this.deltaPan[0];
-    const deltaY = this.deltaPan[1];
-
     const center = this.mapInstance.getView().getCenter();
     const centerInPx = this.mapInstance.getPixelFromCoordinate(center);
-    const newCenterInPx = [centerInPx[0] + deltaX * panSpeed, centerInPx[1] + deltaY * panSpeed];
+
+    const deltaX = (this.deltaPan[0] / this.xPxToWorldRatio) - (this.elWidth / 2);
+    const deltaY = (this.deltaPan[1] / this.yPxToWorldRatio) - (this.elHeight / 2);
+    const newCenterInPx = [
+      centerInPx[0] + deltaX,
+      centerInPx[1] + deltaY
+    ];
+
     const newCenter = this.mapInstance.getCoordinateFromPixel(newCenterInPx);
     this.mapInstance.getView().setCenter(newCenter);
     this.mapInstance.renderFrame_(Date.now());
@@ -48,6 +52,13 @@ AFRAME.registerComponent('ol-dragpan', {
 
   onMapLoaded: function () {
     this.mapInstance = this.el.components['ol-xr'].mapInstance;
+
+    this.xPxToWorldRatio = this.el.components['ol-xr'].xPxToWorldRatio;
+    this.yPxToWorldRatio = this.el.components['ol-xr'].yPxToWorldRatio;
+
+    this.elWidth = this.el.components.geometry.data.width;
+    this.elHeight = this.el.components.geometry.data.height;
+
     this.el.components.raycaster.refreshObjects();
   },
 
