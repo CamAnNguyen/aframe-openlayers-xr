@@ -210,7 +210,6 @@ AFRAME.registerComponent('ol-xr', {
       }),
       layers: [
         new Layer({
-          source: new VectorSource(),
           render: this.mapRenderCallback.bind(this)
         }),
         new VectorLayer({
@@ -310,15 +309,14 @@ AFRAME.registerComponent('ol-xr', {
     } else if (message.data.action === 'requestRender') {
       this.mapInstance.renderFrame_(Date.now());
     } else if (message.data.action === 'rendered') {
-      // const animateUpdateTexture = () => this.updateTexture(message.data.imageData);
-      this.updateTexture(message.data.imageData);
+      const animateUpdateTexture = () => this.updateTexture(message.data.imageData);
 
-      // const xrSession = this.el.sceneEl.renderer.xr.getSession();
-      // if (xrSession) {
-      //   xrSession.requestAnimationFrame(animateUpdateTexture.bind(this));
-      // } else {
-      //   window.requestAnimationFrame(animateUpdateTexture.bind(this));
-      // }
+      const xrSession = this.el.sceneEl.renderer.xr.getSession();
+      if (xrSession) {
+        xrSession.requestAnimationFrame(animateUpdateTexture.bind(this));
+      } else {
+        window.requestAnimationFrame(animateUpdateTexture.bind(this));
+      }
     }
 
     this.el.emit('ol-worker-onmessage', message.data);
