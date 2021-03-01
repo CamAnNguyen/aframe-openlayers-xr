@@ -1,67 +1,102 @@
 AFRAME.registerComponent('ol-zoom', {
-  dependencies: ['ol-xr'],
+  dependencies: ['ol-xr, raycaster'],
 
   schema: {
     size: { default: 0.15 },
+    raycasterClass: { default: 'ray-castable' },
     zoomIn: { default: '' },
     zoomOut: { default: '' }
   },
 
   init: function () {
-    const el = this.el;
-
     const zoomInBtn = document.createElement('a-image');
     AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'src', this.data.zoomIn);
     AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'width', this.data.size);
     AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'height', this.data.size);
-    this.zoomInBtn = zoomInBtn;
+    zoomInBtn.classList.add(this.data.raycasterClass);
+
+    zoomInBtn.addEventListener('loaded', this.onZoomInBtnLoaded.bind(this));
+    zoomInBtn.addEventListener('raycaster-intersected', this.onZoomInBtnIntersected.bind(this));
+    zoomInBtn.addEventListener('raycaster-intersected-cleared', this.onZoomInBtnIntersectedCleared.bind(this));
+
     this.el.appendChild(zoomInBtn);
-    zoomInBtn.addEventListener('loaded', function () {
-      el.emit('ol-zoom-in-loaded', zoomInBtn);
-    });
+    this.zoomInBtn = zoomInBtn;
 
     const zoomOutBtn = document.createElement('a-image');
     AFRAME.utils.entity.setComponentProperty(zoomOutBtn, 'src', this.data.zoomOut);
-    AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'width', this.data.size);
-    AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'height', this.data.size);
-    this.zoomOutBtn = zoomOutBtn;
+    AFRAME.utils.entity.setComponentProperty(zoomOutBtn, 'width', this.data.size);
+    AFRAME.utils.entity.setComponentProperty(zoomOutBtn, 'height', this.data.size);
+    zoomOutBtn.classList.add(this.data.raycasterClass);
+
+    zoomOutBtn.addEventListener('loaded', this.onZoomOutBtnLoaded.bind(this));
+    zoomOutBtn.addEventListener('raycaster-intersected', this.onZoomOutBtnIntersected.bind(this));
+    zoomOutBtn.addEventListener('raycaster-intersected-cleared', this.onZoomOutBtnIntersectedCleared.bind(this));
+
     this.el.appendChild(zoomOutBtn);
-    zoomOutBtn.addEventListener('loaded', function () {
-      el.emit('ol-zoom-out-loaded', zoomOutBtn);
-    });
+    this.zoomOutBtn = zoomOutBtn;
+
+    this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
 
     this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
-
-    this.el.addEventListener('ol-zoomin', this.onMapZoomIn.bind(this));
-    this.el.addEventListener('ol-zoomin-hover', this.onMapZoomInHover.bind(this));
-
-    this.el.addEventListener('ol-zoomout', this.onMapZoomOut.bind(this));
-    this.el.addEventListener('ol-zoomout-hover', this.onMapZoomOutHover.bind(this));
   },
 
   onMapLoaded: function () {
     this.mapInstance = this.el.components['ol-xr'].mapInstance;
     this.currentZoomLevel = this.mapInstance.getView().getZoom();
+
+    this.el.components.raycaster.refreshObjects();
   },
 
-  onMapZoomIn: function (data) {
+  onZoomInBtnLoaded: function () {
+    this.el.emit('ol-zoom-in-loaded', this.zoomInBtn);
+  },
+
+  onZoomOutBtnLoaded: function () {
+    this.el.emit('ol-zoom-out-loaded', this.zoomOutBtn);
+  },
+
+  onZoomInBtnIntersected: function () {
+    this.zoomInIntersected = true;
+  },
+
+  onZoomInBtnIntersectedCleared: function () {
+    this.zoomInIntersected = false;
+  },
+
+  onZoomOutBtnIntersected: function () {
+    this.zoomOutIntersected = true;
+  },
+
+  onZoomOutBtnIntersectedCleared: function () {
+    this.zoomOutIntersected = false;
+  },
+
+  onTriggerDown: function () {
+    if (!this.el.object3D.visible) return;
+
+    if (this.zoomInIntersected) {
+      this.mapZoomIn.bind(this);
+      this.el.emit('ol-zoom-in');
+    } else if (this.zoomOutIntersected) {
+      this.mapZoomIn.bind(this);
+      this.el.emit('ol-zoom-out');
+    }
+  },
+
+  mapZoomIn: function () {
     if (!this.mapInstance) return;
 
     this.currentZoomLevel += 1;
     this.mapInstance.getView().setZoom(this.currentZoomLevel);
+    this.mapInstance.renderFrame_(Date.now());
   },
 
-  onMapZoomInHover: function (data) {
-  },
-
-  onMapZoomOut: function (data) {
+  mapZoomOut: function (data) {
     if (!this.mapInstance) return;
 
     this.currentZoomLevel -= 1;
     this.mapInstance.getView().setZoom(this.currentZoomLevel);
-  },
-
-  onMapZoomOutHover: function (data) {
+    this.mapInstance.renderFrame_(Date.now());
   },
 
   remove: function () {

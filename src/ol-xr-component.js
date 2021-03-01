@@ -10,7 +10,7 @@ import View from 'ol/View';
 import { Vector as VectorSource } from 'ol/source';
 import { Layer, Vector as VectorLayer } from 'ol/layer';
 import { createXYZ } from 'ol/tilegrid';
-import { transform, fromLonLat } from 'ol/proj';
+import { fromLonLat } from 'ol/proj';
 
 const currentScript = document.currentScript || (function () {
   const scripts = document.getElementsByTagName('script');
@@ -101,7 +101,8 @@ AFRAME.registerComponent('ol-xr', {
 
   dependencies: [
     'geometry',
-    'material'
+    'material',
+    'raycaster'
   ],
 
   schema: {
@@ -228,10 +229,10 @@ AFRAME.registerComponent('ol-xr', {
       el.emit('ol-maprendercomplete', { map: this.mapInstance });
     });
 
-    this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
-    this.el.addEventListener('oculus-triggerup', this.onTriggerUp.bind(this));
-    this.el.addEventListener('ol-map-intersected', this.onIntersected.bind(this));
-    this.el.addEventListener('ol-map-intersected-cleared', this.onIntersectedCleared.bind(this));
+    this.el.addEventListener('ol-map-show', this.showMap.bind(this));
+    this.el.addEventListener('ol-map-hide', this.hideMap.bind(this));
+
+    this.el.addEventListener('loaded', this.onLoaded.bind(this));
   },
 
   update: function (oldData) {
@@ -280,10 +281,9 @@ AFRAME.registerComponent('ol-xr', {
     }
   },
 
-  tick: function (time, timeDelta) {
-    if (this.isIntersected && this.raycaster) {
-      this.intersection = this.raycaster.getIntersection(this.el);
-    }
+  onLoaded: function () {
+    this.el.components.raycaster.refreshObjects();
+    this.el.flushToDOM(true);
   },
 
   workerOnMessage: function (message) {
@@ -310,14 +310,15 @@ AFRAME.registerComponent('ol-xr', {
     } else if (message.data.action === 'requestRender') {
       this.mapInstance.renderFrame_(Date.now());
     } else if (message.data.action === 'rendered') {
-      const animateUpdateTexture = () => this.updateTexture(message.data.imageData);
+      // const animateUpdateTexture = () => this.updateTexture(message.data.imageData);
+      this.updateTexture(message.data.imageData);
 
-      const xrSession = this.el.sceneEl.renderer.xr.getSession();
-      if (xrSession) {
-        xrSession.requestAnimationFrame(animateUpdateTexture.bind(this));
-      } else {
-        window.requestAnimationFrame(animateUpdateTexture.bind(this));
-      }
+      // const xrSession = this.el.sceneEl.renderer.xr.getSession();
+      // if (xrSession) {
+      //   xrSession.requestAnimationFrame(animateUpdateTexture.bind(this));
+      // } else {
+      //   window.requestAnimationFrame(animateUpdateTexture.bind(this));
+      // }
     }
 
     this.el.emit('ol-worker-onmessage', message.data);
@@ -326,8 +327,6 @@ AFRAME.registerComponent('ol-xr', {
   updateTexture: function (imageData) {
     const olMapMesh = this.el.getObject3D('mesh');
     olMapMesh.material.map = new THREE.CanvasTexture(imageData);
-    olMapMesh.material.skinning = true;
-    olMapMesh.material.morpTargets = true;
     olMapMesh.material.needsUpdate = true;
   },
 
@@ -383,51 +382,17 @@ AFRAME.registerComponent('ol-xr', {
     return this.mapInstance.unproject([pxX, pxY]).toArray();
   },
 
-  onTriggerDown: function (data) {
-    this.triggerDown = true;
-    const { visible } = this.el.object3D;
-
-    if (!this.isIntersected && visible) {
-      this.el.object3D.visible = false;
-      return;
-    }
-
-    const displayMap = (this.triggerDown && !visible);
-    if (!displayMap) return;
-
+  showMap: function (lat, long) {
     this.el.object3D.visible = true;
 
-    const { skyEl, intersection } = data.detail;
-    const skyRotation = skyEl.getAttribute('rotation');
-    const { point } = intersection;
-
-    const worldToLocal = this.tmpMatrix4;
-    worldToLocal.copy(skyEl.object3D.matrixWorld).invert();
-    this.tmpObj3D.position.copy(point);
-    this.tmpObj3D.applyMatrix4(worldToLocal);
-
-    const eulerX = (-skyRotation.x * Math.PI) / 180;
-    const eulerY = (-skyRotation.y * Math.PI) / 180;
-    const eulerZ = (-skyRotation.z * Math.PI) / 180;
-    this.tmpEuler.set(2 * eulerX, 2 * eulerY, 2 * eulerZ);
-    this.tmpObj3D.position.applyEuler(this.tmpEuler);
-
-    const { position } = this.tmpObj3D;
-    const [lat, long] = unproject(position.x, position.y, position.z);
-
-    this.mapInstance.getView().setCenter(transform([long, lat], 'EPSG:4326', 'EPSG:3857'));
+    this.mapInstance.getView().setCenter(fromLonLat([long, lat]));
     this.mapInstance.renderFrame_(Date.now());
+
+    this.el.emit('ol-show-map');
   },
 
-  onTriggerUp: function () {
-    this.triggerDown = false;
-  },
-
-  onIntersected: function (data) {
-    this.isIntersected = true;
-  },
-
-  onIntersectedCleared: function () {
-    this.isIntersected = false;
+  hideMap: function () {
+    this.el.object3D.visible = false;
+    this.el.emit('ol-hide-map');
   }
 });

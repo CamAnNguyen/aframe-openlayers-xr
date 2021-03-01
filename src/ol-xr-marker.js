@@ -43,10 +43,11 @@ function parseSpacedFloats (value, count, attributeName) {
 }
 
 AFRAME.registerComponent('ol-marker', {
-  dependencies: ['ol-xr'],
+  dependencies: ['ol-xr, raycaster'],
   multiple: true,
   schema: {
     src: { default: '' },
+    raycasterClass: { default: 'ray-castable' },
     width: { default: 0.2 },
     height: { default: 0.2 },
     latlong: {
@@ -75,13 +76,19 @@ AFRAME.registerComponent('ol-marker', {
     // y-axis is inverted
     image.object3D.scale.multiply(new THREE.Vector3(1, -1, 1));
 
-    // Append to current entity
+    this.intersection = null;
+    image.classList.add(this.data.raycasterClass);
+    image.addEventListener('raycaster-intersected', this.onIntersected.bind(this));
+    image.addEventListener('raycaster-intersected-cleared', this.onIntersectedCleard.bind(this));
+
     this.imageEl = image;
+    // Append to current entity
     this.el.appendChild(image);
 
-    // this.el.addEventListener('changestyle', this.onChangeStyle.bind(this));
     // Callback after ol-xr is initialized
     this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
+
+    this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
   },
 
   tick: function (time, timeDelta) {
@@ -128,6 +135,8 @@ AFRAME.registerComponent('ol-marker', {
 
     const iconSource = markerLayer.getSource();
     iconSource.addFeature(this.feature);
+
+    this.el.components.raycaster.refreshObjects();
   },
 
   remove: function () {
@@ -136,5 +145,29 @@ AFRAME.registerComponent('ol-marker', {
     if (!this.mapInstance || !this.feature) return;
 
     this.mapInstance.getLayers().item(1).removeFeature(this.feature);
+  },
+
+  onIntersected: function (evt) {
+    if (!this.el.object3D.visible || !this.imageEl.object3D.visible) {
+      return;
+    }
+
+    this.intersection = evt.detail.el.components.raycaster.getIntersection(this.imageEl);
+    if (!this.intersection) return;
+
+    this.isIntersected = true;
+    this.imageRaycaster = evt.detail.el.components.raycaster;
+    this.imageEl.setAttribute('color', '#787878');
+  },
+
+  onIntersectedCleard: function () {
+    if (!this.imageRaycaster) return;
+
+    this.isIntersected = false;
+    this.imageRaycaster = null;
+    this.imageEl.setAttribute('color', '#ffffff');
+  },
+
+  onTriggerDown: function () {
   }
 });
