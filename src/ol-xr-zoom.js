@@ -75,10 +75,10 @@ AFRAME.registerComponent('ol-zoom', {
     if (!this.el.object3D.visible) return;
 
     if (this.zoomInIntersected) {
-      this.mapZoomIn.bind(this);
+      this.mapZoomIn();
       this.el.emit('ol-zoom-in');
     } else if (this.zoomOutIntersected) {
-      this.mapZoomIn.bind(this);
+      this.mapZoomOut();
       this.el.emit('ol-zoom-out');
     }
   },
