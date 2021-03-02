@@ -204,7 +204,7 @@ AFRAME.registerComponent('ol-xr', {
     this.mapInstance = new Map(Object.assign({
       target: olContainer,
       view: new View({
-        resolutions: createXYZ({ tileSize: 512 }).getResolutions89,
+        resolutions: createXYZ({ tileSize: 512 }).getResolutions(),
         center: fromLonLat([133.281323, -26.4390917]),
         zoom: 2
       }),
