@@ -127,7 +127,7 @@ AFRAME.registerComponent('ol-xr', {
      * @param {int} [minZoom=0] - The minimum zoom level of the map (0-20). (0
      * is furthest out)
      */
-    minZoom: { default: 0 },
+    minZoom: { default: 1 },
 
     /**
      * @param {int} [maxZoom=14] - The maximum zoom level of the map (0-20). (0
@@ -156,7 +156,7 @@ AFRAME.registerComponent('ol-xr', {
     /**
      * @param {int} [zoom=0] - The initial zoom level of the map.
      */
-    zoom: { default: 0 },
+    zoom: { default: 2 },
 
     canvas: { type: 'selector' }
   },
@@ -167,6 +167,7 @@ AFRAME.registerComponent('ol-xr', {
     el.object3D.visible = false;
 
     const data = this.data;
+    this.defaultZoom = data.zoom;
     const geomData = el.components.geometry.data;
 
     const width = THREE.Math.floorPowerOfTwo(geomData.width * data.pxToWorldRatio);
@@ -206,7 +207,7 @@ AFRAME.registerComponent('ol-xr', {
       view: new View({
         resolutions: createXYZ({ tileSize: 512 }).getResolutions(),
         center: fromLonLat([133.281323, -26.4390917]),
-        zoom: 2
+        zoom: this.defaultZoom
       }),
       layers: [
         new Layer({
@@ -383,7 +384,9 @@ AFRAME.registerComponent('ol-xr', {
   showMap: function (lat, long) {
     this.el.object3D.visible = true;
 
-    this.mapInstance.getView().setCenter(fromLonLat([long, lat]));
+    const view = this.mapInstance.getView();
+    view.setZoom(this.defaultZoom);
+    view.setCenter(fromLonLat([long, lat]));
     this.mapInstance.renderFrame_(Date.now());
 
     this.el.emit('ol-show-map');

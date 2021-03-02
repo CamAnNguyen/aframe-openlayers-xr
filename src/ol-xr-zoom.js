@@ -38,6 +38,7 @@ AFRAME.registerComponent('ol-zoom', {
     this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
 
     this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
+    this.el.addEventListener('ol-hide-map', this.onHideMap.bind(this));
   },
 
   onMapLoaded: function () {
@@ -83,6 +84,10 @@ AFRAME.registerComponent('ol-zoom', {
     }
   },
 
+  onHideMap: function () {
+    this.currentZoomLevel = this.el.components['ol-xr'].defaultZoom;
+  },
+
   mapZoomIn: function () {
     if (!this.mapInstance) return;
 
@@ -92,7 +97,8 @@ AFRAME.registerComponent('ol-zoom', {
   },
 
   mapZoomOut: function (data) {
-    if (!this.mapInstance) return;
+    const minZoom = this.el.components['ol-xr'].minZoom;
+    if (!this.mapInstance || this.currentZoomLevel === minZoom) return;
 
     this.currentZoomLevel -= 1;
     this.mapInstance.getView().setZoom(this.currentZoomLevel);
