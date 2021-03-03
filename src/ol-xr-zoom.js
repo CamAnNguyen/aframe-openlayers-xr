@@ -13,7 +13,6 @@ AFRAME.registerComponent('ol-zoom', {
     AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'src', this.data.zoomIn);
     AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'width', this.data.size);
     AFRAME.utils.entity.setComponentProperty(zoomInBtn, 'height', this.data.size);
-    zoomInBtn.classList.add(this.data.raycasterClass);
 
     zoomInBtn.addEventListener('loaded', this.onZoomInBtnLoaded.bind(this));
     zoomInBtn.addEventListener('raycaster-intersected', this.onZoomInBtnIntersected.bind(this));
@@ -26,7 +25,6 @@ AFRAME.registerComponent('ol-zoom', {
     AFRAME.utils.entity.setComponentProperty(zoomOutBtn, 'src', this.data.zoomOut);
     AFRAME.utils.entity.setComponentProperty(zoomOutBtn, 'width', this.data.size);
     AFRAME.utils.entity.setComponentProperty(zoomOutBtn, 'height', this.data.size);
-    zoomOutBtn.classList.add(this.data.raycasterClass);
 
     zoomOutBtn.addEventListener('loaded', this.onZoomOutBtnLoaded.bind(this));
     zoomOutBtn.addEventListener('raycaster-intersected', this.onZoomOutBtnIntersected.bind(this));
@@ -38,6 +36,8 @@ AFRAME.registerComponent('ol-zoom', {
     this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
 
     this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
+
+    this.el.addEventListener('ol-show-map', this.onShowMap.bind(this));
     this.el.addEventListener('ol-hide-map', this.onHideMap.bind(this));
   },
 
@@ -73,7 +73,7 @@ AFRAME.registerComponent('ol-zoom', {
   },
 
   onTriggerDown: function () {
-    if (!this.el.object3D.visible) return;
+    if (!this.mapVisible) return;
 
     if (this.zoomInIntersected) {
       this.mapZoomIn();
@@ -84,12 +84,23 @@ AFRAME.registerComponent('ol-zoom', {
     }
   },
 
+  onShowMap: function () {
+    this.mapVisible = true;
+    this.zoomInBtn.classList.add(this.data.raycasterClass);
+    this.zoomOutBtn.classList.add(this.data.raycasterClass);
+    this.el.components.raycaster.refreshObjects();
+  },
+
   onHideMap: function () {
+    this.mapVisible = false;
+    this.zoomInBtn.classList.remove(this.data.raycasterClass);
+    this.zoomOutBtn.classList.remove(this.data.raycasterClass);
     this.currentZoomLevel = this.el.components['ol-xr'].defaultZoom;
+    this.el.components.raycaster.refreshObjects();
   },
 
   mapZoomIn: function () {
-    if (!this.mapInstance) return;
+    if (!this.mapInstance || !this.mapVisible) return;
 
     this.currentZoomLevel += 1;
     this.mapInstance.getView().setZoom(this.currentZoomLevel);
@@ -98,7 +109,9 @@ AFRAME.registerComponent('ol-zoom', {
 
   mapZoomOut: function (data) {
     const minZoom = this.el.components['ol-xr'].minZoom;
-    if (!this.mapInstance || this.currentZoomLevel === minZoom) return;
+    if (!this.mapInstance || !this.mapVisible || this.currentZoomLevel === minZoom) {
+      return;
+    }
 
     this.currentZoomLevel -= 1;
     this.mapInstance.getView().setZoom(this.currentZoomLevel);

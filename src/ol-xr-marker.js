@@ -77,7 +77,6 @@ AFRAME.registerComponent('ol-marker', {
     image.object3D.scale.multiply(new THREE.Vector3(1, -1, 1));
 
     this.intersection = null;
-    image.classList.add(this.data.raycasterClass);
     image.addEventListener('raycaster-intersected', this.onIntersected.bind(this));
     image.addEventListener('raycaster-intersected-cleared', this.onIntersectedCleard.bind(this));
 
@@ -89,6 +88,9 @@ AFRAME.registerComponent('ol-marker', {
     this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
 
     this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
+
+    this.el.addEventListener('ol-show-map', this.onShowMap.bind(this));
+    this.el.addEventListener('ol-hide-map', this.onHideMap.bind(this));
   },
 
   tick: function (time, timeDelta) {
@@ -97,9 +99,8 @@ AFRAME.registerComponent('ol-marker', {
     const mapExtent = this.mapInstance.getView().calculateExtent(this.mapInstance.getSize());
 
     const coordinate = this.feature.getGeometry().getCoordinates();
-    if (containsCoordinate(mapExtent, coordinate)) {
-      const pixel = this.mapInstance.getPixelFromCoordinate(coordinate);
-
+    const pixel = this.mapInstance.getPixelFromCoordinate(coordinate);
+    if (containsCoordinate(mapExtent, coordinate) && pixel) {
       const posX = (pixel[0] / this.xPxToWorldRatio) - (this.elWidth / 2);
       const posY = (pixel[1] / this.yPxToWorldRatio) - (this.elHeight / 2);
 
@@ -136,6 +137,16 @@ AFRAME.registerComponent('ol-marker', {
     const iconSource = markerLayer.getSource();
     iconSource.addFeature(this.feature);
 
+    this.el.components.raycaster.refreshObjects();
+  },
+
+  onShowMap: function () {
+    this.imageEl.classList.add(this.data.raycasterClass);
+    this.el.components.raycaster.refreshObjects();
+  },
+
+  onHideMap: function () {
+    this.imageEl.classList.remove(this.data.raycasterClass);
     this.el.components.raycaster.refreshObjects();
   },
 

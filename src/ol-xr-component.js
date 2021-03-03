@@ -392,6 +392,7 @@ AFRAME.registerComponent('ol-xr', {
     this.mapInstance.renderFrame_(Date.now());
 
     this.el.emit('ol-show-map');
+    this.el.components.raycaster.refreshObjects();
   },
 
   hideMap: function () {
@@ -399,6 +400,7 @@ AFRAME.registerComponent('ol-xr', {
     this.el.classList.remove(this.data.raycasterClass);
 
     this.el.emit('ol-hide-map');
+    this.el.components.raycaster.refreshObjects();
   },
 
   remove: function () {
