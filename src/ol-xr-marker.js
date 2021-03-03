@@ -48,6 +48,7 @@ AFRAME.registerComponent('ol-marker', {
   schema: {
     src: { default: '' },
     raycasterClass: { default: 'ray-castable' },
+    hoverColor: { default: '#787878' },
     width: { default: 0.2 },
     height: { default: 0.2 },
     latlong: {
@@ -168,7 +169,7 @@ AFRAME.registerComponent('ol-marker', {
 
     this.isIntersected = true;
     this.imageRaycaster = evt.detail.el.components.raycaster;
-    this.imageEl.setAttribute('color', '#787878');
+    this.imageEl.setAttribute('color', this.data.hoverColor);
   },
 
   onIntersectedCleard: function () {
