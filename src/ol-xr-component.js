@@ -124,7 +124,7 @@ AFRAME.registerComponent('ol-xr', {
     accessToken: { default: '' },
 
     /**
-     * @param {int} [minZoom=0] - The minimum zoom level of the map (0-20). (0
+     * @param {int} [minZoom=1] - The minimum zoom level of the map (0-20). (0
      * is furthest out)
      */
     minZoom: { default: 1 },
@@ -134,6 +134,11 @@ AFRAME.registerComponent('ol-xr', {
      * is furthest out)
      */
     maxZoom: { default: 14 },
+
+    /**
+     * @param {int} [zoom=5] - The initial zoom level of the map.
+     */
+    zoom: { default: 5 },
 
     /**
      * @param {array} [center=[0, 0]] - The inital geographical centerpoint of
@@ -153,20 +158,16 @@ AFRAME.registerComponent('ol-xr', {
       }
     },
 
-    /**
-     * @param {int} [zoom=0] - The initial zoom level of the map.
-     */
-    zoom: { default: 2 },
-
     canvas: { type: 'selector' }
   },
   init: function () {
     const el = this.el;
+    const data = this.data;
 
     el.object3D.scale.multiply(new THREE.Vector3(1, -1, 1));
     el.object3D.visible = false;
+    el.classList.remove(this.data.raycasterClass);
 
-    const data = this.data;
     this.defaultZoom = data.zoom;
     const geomData = el.components.geometry.data;
 
@@ -383,6 +384,7 @@ AFRAME.registerComponent('ol-xr', {
 
   showMap: function (lat, long) {
     this.el.object3D.visible = true;
+    this.el.classList.add(this.data.raycasterClass);
 
     const view = this.mapInstance.getView();
     view.setZoom(this.defaultZoom);
@@ -394,6 +396,23 @@ AFRAME.registerComponent('ol-xr', {
 
   hideMap: function () {
     this.el.object3D.visible = false;
+    this.el.classList.remove(this.data.raycasterClass);
+
     this.el.emit('ol-hide-map');
+  },
+
+  remove: function () {
+    this.xPxToWorldRatio = null;
+    this.yPxToWorldRatio = null;
+
+    this.tmpObj3D = null;
+    this.tmpMatrix4 = null;
+    this.tmpEuler = null;
+
+    this.olWorker.terminate();
+    this.olWorker = null;
+
+    this.mapInstance.setTarget(null);
+    this.mapInstance = null;
   }
 });
