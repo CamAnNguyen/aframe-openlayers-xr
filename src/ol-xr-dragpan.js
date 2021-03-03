@@ -4,8 +4,8 @@ AFRAME.registerComponent('ol-dragpan', {
     this.el.sceneEl.addEventListener('enter-vr', this.onEnterVr.bind(this));
     this.el.sceneEl.addEventListener('exit-vr', this.onExitVr.bind(this));
 
-    this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
-    this.el.addEventListener('oculus-triggerup', this.onTriggerUp.bind(this));
+    this.el.addEventListener('triggerdown', this.onTriggerDown.bind(this));
+    this.el.addEventListener('triggerup', this.onTriggerUp.bind(this));
 
     this.el.addEventListener('raycaster-intersected', this.onIntersected.bind(this));
     this.el.addEventListener('raycaster-intersected-cleared', this.onIntersectedCleared.bind(this));
@@ -17,6 +17,10 @@ AFRAME.registerComponent('ol-dragpan', {
     if (!this.mapInstance || !this.el.object3D.visible || !this.dragPanRaycaster) {
       return;
     }
+
+    const intersection = this.dragPanRaycaster.getIntersection(this.el);
+    // Intersection has not been updated, skip to next tick
+    if (intersection.distance === 0) return;
 
     this.oldIntersection = this.curIntersection;
     this.curIntersection = this.el.components.raycaster.getIntersection(this.el);
@@ -85,12 +89,10 @@ AFRAME.registerComponent('ol-dragpan', {
   },
 
   onIntersectedCleared: function () {
-    if (!this.dragPanRaycaster) return;
-
-    const intersection = this.dragPanRaycaster.getIntersection(this.el);
-    if (intersection) return;
-
+    if (this.dragPanRaycaster) {
     this.dragPanRaycaster = null;
+    }
+
     this.endDragPan();
   },
 

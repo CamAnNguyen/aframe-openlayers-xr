@@ -158,6 +158,7 @@ AFRAME.registerComponent('ol-xr', {
       }
     },
 
+    raycasterClass: { default: 'ray-castable' },
     canvas: { type: 'selector' }
   },
   init: function () {

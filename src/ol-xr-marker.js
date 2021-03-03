@@ -87,7 +87,7 @@ AFRAME.registerComponent('ol-marker', {
     // Callback after ol-xr is initialized
     this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
 
-    this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
+    this.el.addEventListener('triggerdown', this.onTriggerDown.bind(this));
 
     this.el.addEventListener('ol-show-map', this.onShowMap.bind(this));
     this.el.addEventListener('ol-hide-map', this.onHideMap.bind(this));

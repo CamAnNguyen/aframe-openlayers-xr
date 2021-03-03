@@ -33,7 +33,7 @@ AFRAME.registerComponent('ol-zoom', {
     this.el.appendChild(zoomOutBtn);
     this.zoomOutBtn = zoomOutBtn;
 
-    this.el.addEventListener('oculus-triggerdown', this.onTriggerDown.bind(this));
+    this.el.addEventListener('triggerdown', this.onTriggerDown.bind(this));
 
     this.el.addEventListener('loaded', this.onMapLoaded.bind(this));
 
