@@ -23,6 +23,19 @@ const defaultWorkerUrl = (
   'https://rawgit.com/CamAnNguyen/aframe-openlayers-xr/master/build/ol-xr-worker.js'
 );
 
+const createMultiMaterialObject = function (geometry, materials) {
+  const group = new THREE.Group();
+  for (let i = 0, l = materials.length; i < l; i++) {
+    group.add(new THREE.Mesh(geometry, materials[i]));
+  }
+
+  return group;
+};
+
+const backgroundMaterial = new THREE.MeshBasicMaterial({
+  color: 'hsl(0, 0%, 90%)'
+});
+
 function parseSpacedFloats (value, count, attributeName) {
   if (!value) {
     return undefined;
@@ -326,9 +339,18 @@ AFRAME.registerComponent('ol-xr', {
   },
 
   updateTexture: function (imageData) {
-    const olMapMesh = this.el.getObject3D('mesh');
-    olMapMesh.material.map = new THREE.CanvasTexture(imageData);
-    olMapMesh.material.needsUpdate = true;
+    // const olMapMesh = this.el.getObject3D('mesh');
+    // olMapMesh.material.map = new THREE.CanvasTexture(imageData);
+    // olMapMesh.material.needsUpdate = true;
+
+    const mapMaterial = new THREE.MeshBasicMaterial({
+      map: new THREE.CanvasTexture(imageData),
+      transparent: true
+    });
+
+    const materials = [mapMaterial, backgroundMaterial];
+    const plane = createMultiMaterialObject(this.el.components.geometry.geometry, materials);
+    this.el.setObject3D('mesh', plane);
   },
 
   mapRenderCallback: function (frameState) {
